@@ -1,1 +1,1 @@
-# OpenGL-Lighting
+# 2D-Lighting

@@ -1,0 +1,3 @@
+C:/Users/lpc0503/Desktop/OpenGL_learning/LearnOpenGL/deps/glad/build/CMakeFiles/rebuild_cache.dir
+C:/Users/lpc0503/Desktop/OpenGL_learning/LearnOpenGL/deps/glad/build/CMakeFiles/edit_cache.dir
+C:/Users/lpc0503/Desktop/OpenGL_learning/LearnOpenGL/deps/glad/build/CMakeFiles/glad.dir
