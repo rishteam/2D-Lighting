@@ -7,6 +7,7 @@
 #define RAY_CASTING_GAME_H
 
 #include <pch.h>
+#include <Block.h>
 #include <Light.h>
 
 class Game {
@@ -19,6 +20,9 @@ public:
     float GetWidth() { return width_; }
     float GetHeight() { return height_; }
     sf::Vector2u GetWindowSize() {return window.getSize(); }
+
+    std::vector<std::shared_ptr<Block>> GetBlocks() { return blocks; }
+    std::vector<std::shared_ptr<Light>> GetLights() { return lights; }
 
     Game(float width, float height);
 
@@ -40,6 +44,9 @@ private:
 
     float width_, height_;
     sf::RenderWindow window;
+
+    std::vector<std::shared_ptr<Light>> lights;
+    std::vector<std::shared_ptr<Block>> blocks;
 };
 
 

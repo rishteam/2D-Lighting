@@ -3,11 +3,11 @@
 //
 #include <Block.h>
 
-Block::Block(p2 pos, float width, float height) : pos(pos), width(width), height(height) {
+Block::Block(p2 pos, p2 size) : pos(pos), size(size) {
 
 }
 
 std::vector<p2> Block::getVertices() {
 
-    return std::vector<p2> {pos, {pos.x, pos.y+height}, {pos.x + width, pos.y+height}, {pos.x + width, pos.y}};
+    return std::vector<p2> {pos, {pos.x, pos.y+size.y}, {pos.x + size.x, pos.y+size.y}, {pos.x + size.x, pos.y}};
 }

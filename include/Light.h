@@ -13,10 +13,10 @@ public:
 
     Light(p2 pos, p3 color);
 
-private:
 
     p2 pos;
     p3 color;
+private:
 };
 
 

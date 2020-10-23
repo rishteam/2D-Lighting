@@ -16,6 +16,10 @@ public:
 
     static void DrawQuad(const p2 pos, const p2 size, const p4 color);
 
+    static void DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 pos4, const p4 color);
+
+    static void DrawLight(const p2 pos, const p4 color);
+
 private:
 
     std::shared_ptr<Shader> shader;
