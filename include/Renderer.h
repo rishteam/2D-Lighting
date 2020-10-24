@@ -7,6 +7,7 @@
 #include <pch.h>
 #include <shader.h>
 #include <VertexArray.h>
+#include <Light.h>
 
 class Renderer {
 
@@ -18,13 +19,11 @@ public:
 
     static void DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 pos4, const p4 color);
 
-    static void DrawLight(const p2 pos, const p4 color);
+    static void DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light);
 
 private:
 
-    std::shared_ptr<Shader> shader;
-    std::shared_ptr<VertexArray> vertexArray;
-    std::shared_ptr<IndexBuffer> indexBuffer;
+    static void DrawQuad(p2 pos1, p2 pos2, p2 pos3, p2 pos4);
 };
 
 

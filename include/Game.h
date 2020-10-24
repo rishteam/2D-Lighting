@@ -47,6 +47,7 @@ private:
 
     std::vector<std::shared_ptr<Light>> lights;
     std::vector<std::shared_ptr<Block>> blocks;
+    int index;
 };
 
 

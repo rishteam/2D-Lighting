@@ -11,11 +11,14 @@ class Light {
 
 public:
 
-    Light(p2 pos, p3 color);
+    Light(p2 pos, p4 color, float radius);
 
+    void onUpdate(float dt);
 
     p2 pos;
-    p3 color;
+    p4 color;
+    float radius;
+
 private:
 };
 
