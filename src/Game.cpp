@@ -14,7 +14,7 @@ float r() {
 
 float ri() {
 
-    return rand() % (250) + 1;
+    return rand() % (100) + 100;
 }
 
 Game *Game::s_instance = new Game(1280, 720);
@@ -41,7 +41,7 @@ void Game::init() {
     int lightCount = 1;
 
     p2 mousePos = {20, 20};
-    p4 color    = {r(), r(), r(), r()};
+    p4 color    = {r(), r(), r(), 1};
     lights.push_back(std::make_shared<Light>(mousePos, color, ri()));
     p2 size{100, 100};
     blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
@@ -50,6 +50,9 @@ void Game::init() {
     blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
     blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
     blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
+
+    fbo = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
+    fbo2 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
 }
 
 void Game::run() {
@@ -59,8 +62,8 @@ void Game::run() {
     std::chrono::steady_clock::time_point clock_prev = std::chrono::steady_clock::now();
     float dt;
     sf::Clock deltaClock;
-    glEnable(GL_STENCIL_TEST);
-    glEnable(GL_DEPTH_TEST);
+//    glEnable(GL_STENCIL_TEST);
+//    glEnable(GL_DEPTH_TEST);
     while(running) {
 
         sf::Event event;
@@ -91,7 +94,6 @@ void Game::processInput(float dt) {
 
     static bool flag = false;
 
-
     if(sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
 
         if(!flag) {
@@ -120,15 +122,14 @@ void Game::onImGuiRender(float dt) {
 
 void Game::render() {
 
-//    glEnable(GL_BLEND);
-//    glBlendFunc(GL_ONE, GL_ONE);
+    fbo->bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     for(auto light : lights) {
 
-//        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-//        glStencilFunc(GL_EQUAL, 0, 1);
+
 //        glColorMask(false, false, false, false);
-        glStencilFunc(GL_ALWAYS, 1, 1);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+//        glStencilFunc(GL_ALWAYS, 1, 1);
+//        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for(auto block : blocks) {
 
             std::vector<p2> vertices = block->getVertices();
@@ -150,23 +151,30 @@ void Game::render() {
         }
     }
 
+    glColorMask(true, true, true, true);
+    glEnable(GL_BLEND);
+//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+//        glStencilFunc(GL_EQUAL, 0, 1);
+    static int a = 100;
+    static int b = 100;
+    glBlendFunc(GL_ONE, GL_ONE);
+//    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 0, 0, 1));
+    for(auto light : lights) {
+        // p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0)
+        // p2(light->pos.x - a, light->pos.y - b), p2(light->pos.x - a, light->pos.y + b), p2(light->pos.x + a, light->pos.y + b), p2(light->pos.x + a, light->pos.y - b)
+        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
+    }
+    fbo->unbind();
+    Renderer::DrawTexture(fbo->getColorAttachmentRendererID());
+
+    fbo2->bind();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for(auto block : blocks) {
 
         std::vector<p2> vertices = block->getVertices();
-        Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], p4(1, 0, 0, 1.));
+        Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], p4(1, 1, 1, 1));
     }
-
-    glColorMask(true, true, true, true);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-
-    for(auto light : lights) {
-        // p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0)
-        // light->pos, p2(light->pos.x, light->pos.y + 100), p2(light->pos.x + 100, light->pos.y + 100)
-        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
-    }
-    glDisable(GL_BLEND);
-
-
+    fbo2->unbind();
     window.display();
 }

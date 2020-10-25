@@ -9,6 +9,7 @@
 #include <pch.h>
 #include <Block.h>
 #include <Light.h>
+#include <Framebuffer.h>
 
 class Game {
 
@@ -47,6 +48,8 @@ private:
 
     std::vector<std::shared_ptr<Light>> lights;
     std::vector<std::shared_ptr<Block>> blocks;
+    std::shared_ptr<Framebuffer> fbo;
+    std::shared_ptr<Framebuffer> fbo2;
     int index;
 };
 
