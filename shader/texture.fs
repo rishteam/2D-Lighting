@@ -4,9 +4,12 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
+uniform sampler2D worldGeometry;
 
 void main()
 {
-    vec3 col = texture(screenTexture, TexCoords).rgb;
-    FragColor = vec4(col, 1.0);
+//    vec4 color = mix(texture(screenTexture, TexCoords), texture(worldGeometry, TexCoords), 0.5);
+//    FragColor = color;
+    FragColor =texture(screenTexture, TexCoords) * texture(worldGeometry, TexCoords);
+//    FragColor = texture(screenTexture, TexCoords);
 }

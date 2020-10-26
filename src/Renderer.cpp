@@ -36,6 +36,7 @@ struct RendererData {
     std::shared_ptr<VertexArray> textureVAO;
     std::shared_ptr<VertexBuffer> textureVBO;
     std::shared_ptr<Shader> textureShader;
+    std::shared_ptr<Shader> singleTextureShader;
 };
 
 static std::unique_ptr<RendererData> data;
@@ -84,7 +85,13 @@ void Renderer::Init() {
     data->textureVBO->setLayout(layout2);
     data->textureVAO->addVertexBuffer(data->textureVBO);
     data->textureShader = std::make_shared<Shader>("shader/texture.vs", "shader/texture.fs");
+    data->textureShader->bind();
+    data->textureShader->setInt("screenTexture", 0);
+    data->textureShader->setInt("worldGeometry", 1);
     data->textureVAO->unbind();
+    data->singleTextureShader = std::make_shared<Shader>("shader/singleTexture.vs", "shader/singleTexture.fs");
+    data->singleTextureShader->bind();
+    data->singleTextureShader->setInt("screenTexture", 0);
 }
 
 void Renderer::DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 pos4, const p4 color) {
@@ -164,7 +171,20 @@ void Renderer::DrawQuad(p2 pos1, p2 pos2, p2 pos3, p2 pos4) {
 void Renderer::DrawTexture(uint32_t id, uint32_t id2) {
 
     data->textureShader->bind();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, id2);
     data->textureVAO->bind();
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    data->textureVAO->unbind();
+}
+
+void Renderer::DrawSingleTexture(uint32_t id) {
+
+    data->singleTextureShader->bind();
+    data->textureVAO->bind();
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, id);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     data->textureVAO->unbind();
