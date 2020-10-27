@@ -53,6 +53,10 @@ void Game::init() {
 
     fbo = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo2 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
+    fbo3 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
+    fbo4 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
+
+    textureID = loadTexture("assets/1.png");
 }
 
 void Game::run() {
@@ -110,6 +114,24 @@ void Game::processInput(float dt) {
     }
 }
 
+uint32_t Game::loadTexture(std::string path) {
+
+    sf::Image img;
+    img.loadFromFile(path);
+    img.flipVertically();
+
+    uint32_t texture;
+    glGenTextures(1, &texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getSize().x, img.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void*)img.getPixelsPtr());
+    glGenerateMipmap(GL_TEXTURE_2D);
+    return texture;
+}
+
+
 void Game::update(float dt) {
 
     lights[index]->onUpdate(dt);
@@ -123,15 +145,27 @@ void Game::onImGuiRender(float dt) {
 
 void Game::render() {
 
+    // Shadow
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
     fbo->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    for(auto light : lights) {
+    fbo->unbind();
 
+    fbo3->bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 1, 1, 1));
+    fbo3->unbind();
+
+    for(auto light : lights) {
 
 //        glColorMask(false, false, false, false);
 //        glStencilFunc(GL_ALWAYS, 1, 1);
 //        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for(auto block : blocks) {
+
+            fbo3->bind();
 
             std::vector<p2> vertices = block->getVertices();
             for(int i = 0 ; i < vertices.size() ; i++) {
@@ -142,24 +176,25 @@ void Game::render() {
                 p2 normal         = p2(edge.y, -edge.x);
                 p2 lightToCurrent = currentVertex - light->pos;
 
-                if(glm::dot(normal, lightToCurrent) > 0) {
-
+                if(glm::dot(normal, lightToCurrent) > 0)
+                {
                     p2 point1 = (currentVertex + lightToCurrent * 800.f) ;
                     p2 point2 = (nextVertex + (nextVertex - light->pos)* 800.f) ;
-                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0, 0.0, 0.0, 1));
+                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0.0, 0.0, 0.0, 1.));
                 }
             }
+            fbo3->unbind();
         }
+
+        // Light
+        fbo->bind();
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
         Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
+        fbo->unbind();
     }
-
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 0, 1, 1));
-    fbo->unbind();
-//    glBlendFunc(GL_ONE, GL_ONE);
 //    Renderer::DrawSingleTexture(fbo->getColorAttachmentRendererID());
+//    glBlendFunc(GL_ONE, GL_ONE);
     fbo2->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -170,8 +205,7 @@ void Game::render() {
         Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], p4(0, 1, 0, 1));
     }
     fbo2->unbind();
-//    Renderer::DrawSingleTexture(fbo2->getColorAttachmentRendererID());
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID());
+//    Renderer::DrawSingleTexture(textureID);
+    Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID(), fbo3->getColorAttachmentRendererID());
     window.display();
 }

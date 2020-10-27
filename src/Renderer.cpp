@@ -86,8 +86,9 @@ void Renderer::Init() {
     data->textureVAO->addVertexBuffer(data->textureVBO);
     data->textureShader = std::make_shared<Shader>("shader/texture.vs", "shader/texture.fs");
     data->textureShader->bind();
-    data->textureShader->setInt("screenTexture", 0);
+    data->textureShader->setInt("lightTexture", 0);
     data->textureShader->setInt("worldGeometry", 1);
+    data->textureShader->setInt("shadowTexture", 2);
     data->textureVAO->unbind();
     data->singleTextureShader = std::make_shared<Shader>("shader/singleTexture.vs", "shader/singleTexture.fs");
     data->singleTextureShader->bind();
@@ -168,13 +169,15 @@ void Renderer::DrawQuad(p2 pos1, p2 pos2, p2 pos3, p2 pos4) {
 
 }
 
-void Renderer::DrawTexture(uint32_t id, uint32_t id2) {
+void Renderer::DrawTexture(uint32_t id, uint32_t id2, uint32_t id3) {
 
     data->textureShader->bind();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, id);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, id2);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, id3);
     data->textureVAO->bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
     data->textureVAO->unbind();

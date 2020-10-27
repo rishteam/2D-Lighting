@@ -39,6 +39,8 @@ public:
 
     void onImGuiRender(float dt);
 
+    uint32_t loadTexture(std::string path);
+
     void run();
 
 private:
@@ -46,10 +48,14 @@ private:
     float width_, height_;
     sf::RenderWindow window;
 
+    uint32_t textureID;
+
     std::vector<std::shared_ptr<Light>> lights;
     std::vector<std::shared_ptr<Block>> blocks;
     std::shared_ptr<Framebuffer> fbo;
     std::shared_ptr<Framebuffer> fbo2;
+    std::shared_ptr<Framebuffer> fbo3;
+    std::shared_ptr<Framebuffer> fbo4;
     int index;
 };
 
