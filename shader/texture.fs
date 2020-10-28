@@ -14,14 +14,9 @@ void main()
 
     vec4 lightColor = texture(lightTexture, TexCoords);
     vec4 worldColor = texture(worldGeometry, TexCoords);
-    vec4 shadowColor = texture(shadowTexture, TexCoords);
 
-    // 有 shadow
+    vec4 outColor = lightColor * worldColor;
+//    outColor *= mix(0.5, 1.0, 0.0);
 
-    if(shadowColor.rgb == vec3(0, 0, 0) &&
-        (worldColor.rgb != vec3(0, 0, 0) || lightColor.rgb != vec3(0, 0, 0)))
-        FragColor = lightColor * worldColor;
-    else
-        FragColor = lightColor * worldColor * shadowColor;
-//    FragColor = shadowColor;
+    FragColor = outColor;
 }

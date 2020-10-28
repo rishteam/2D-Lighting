@@ -44,12 +44,12 @@ void Game::init() {
     p4 color    = {r(), r(), r(), 1};
     lights.push_back(std::make_shared<Light>(mousePos, color, ri()));
     p2 size{100, 100};
-    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
     blocks.push_back(std::make_shared<Block>(p2{500, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
 
     fbo = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo2 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
@@ -66,7 +66,7 @@ void Game::run() {
     std::chrono::steady_clock::time_point clock_prev = std::chrono::steady_clock::now();
     float dt;
     sf::Clock deltaClock;
-//    glEnable(GL_STENCIL_TEST);
+    glEnable(GL_STENCIL_TEST);
     glEnable(GL_DEPTH_TEST);
 
     while(running) {
@@ -153,59 +153,62 @@ void Game::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     fbo->unbind();
 
-    fbo3->bind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 1, 1, 1));
-    fbo3->unbind();
-
+    fbo->bind();
     for(auto light : lights) {
 
-//        glColorMask(false, false, false, false);
-//        glStencilFunc(GL_ALWAYS, 1, 1);
-//        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glColorMask(false, false, false, false);
+        glStencilFunc(GL_ALWAYS, 1, 1);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         for(auto block : blocks) {
-
-            fbo3->bind();
 
             std::vector<p2> vertices = block->getVertices();
             for(int i = 0 ; i < vertices.size() ; i++) {
 
+//                if(glm::distance(vertices[i], light->pos) > light->radius)
+//                    continue;
                 p2 currentVertex  = vertices[i];
                 p2 nextVertex     = vertices[(i+1)%vertices.size()];
                 p2 edge           = nextVertex - currentVertex;
                 p2 normal         = p2(edge.y, -edge.x);
                 p2 lightToCurrent = currentVertex - light->pos;
 
-                if(glm::dot(normal, lightToCurrent) > 0)
+                if(glm::dot(normal, lightToCurrent) < 0)
                 {
                     p2 point1 = (currentVertex + lightToCurrent * 800.f) ;
                     p2 point2 = (nextVertex + (nextVertex - light->pos)* 800.f) ;
                     Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0.0, 0.0, 0.0, 1.));
+//                    std::cout << currentVertex.x << " " << currentVertex.y << " || " << nextVertex.x << " " << nextVertex.y << std::endl;
                 }
             }
-            fbo3->unbind();
         }
 
-        // Light
-        fbo->bind();
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        glStencilFunc(GL_EQUAL, 0, 1);
+        glColorMask(true, true, true, true);
         Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
-        fbo->unbind();
+        glClear(GL_STENCIL_BUFFER_BIT);
+        glDisable(GL_BLEND);
     }
-//    Renderer::DrawSingleTexture(fbo->getColorAttachmentRendererID());
-//    glBlendFunc(GL_ONE, GL_ONE);
+    fbo->unbind();
     fbo2->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//    glStencilFunc(GL_ALWAYS, 1, 1);
+//    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 1, 1, 1));
+//    glEnable(GL_BLEND);
+//    glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
+    glClear(GL_STENCIL_BUFFER_BIT);
     for(auto block : blocks) {
-
         std::vector<p2> vertices = block->getVertices();
-        Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], p4(0, 1, 0, 1));
+        Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], p4(1, 0, 0, 1));
     }
     fbo2->unbind();
-//    Renderer::DrawSingleTexture(textureID);
+
+
+    glBlendFunc(GL_ONE, GL_ONE);
     Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID(), fbo3->getColorAttachmentRendererID());
+//    Renderer::DrawSingleTexture(fbo2->getColorAttachmentRendererID());
     window.display();
 }
