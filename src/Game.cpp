@@ -101,6 +101,7 @@ void Game::run() {
 void Game::processInput(float dt) {
 
     static bool flag = false;
+    p2 mousePos = {sf::Mouse::getPosition(Game::Get().GetWindow()).x, sf::Mouse::getPosition(Game::Get().GetWindow()).y};
 
     if(sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
 
@@ -114,12 +115,25 @@ void Game::processInput(float dt) {
                     light->traceMouse = false;
                 }
             }
+
+            for(auto block : blocks) {
+
+                if(block->mouseTrace) {
+
+                    block->mouseTrace = false;
+                }
+            }
         }
     }
-    else {
+    else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) {
 
-        flag = false;
+        if(!flag) {
+
+            flag = true;
+            lights.push_back(std::make_shared<Light>(mousePos, p4{r(), r(), r(), r()}, ri()));
+        }
     }
+    else flag = false;
 }
 
 uint32_t Game::loadTexture(std::string path) {
@@ -146,6 +160,11 @@ void Game::update(float dt) {
 
         light->onUpdate(dt);
     }
+
+    for(auto block : blocks) {
+
+        block->onUpdate(dt);
+    }
 }
 
 void Game::onImGuiRender(float dt) {
@@ -161,7 +180,6 @@ void Game::onImGuiRender(float dt) {
             if(ImGui::TreeNode(light->tag.c_str())) {
 
                 ImGui::Checkbox("Follow Mouse", &light->traceMouse);
-
                 if(!light->traceMouse) {
 
                     ImGui::PushItemWidth(100);
@@ -171,7 +189,6 @@ void Game::onImGuiRender(float dt) {
                     ImGui::Text("Light Position");
                     ImGui::PopItemWidth();
                 }
-
                 ImGui::ColorEdit4("##Color", glm::value_ptr(light->color));
 
                 ImGui::DragFloat("##Constant", &light->constant, 0.0001, 0.f, 1.f, "%.06f");
@@ -182,7 +199,36 @@ void Game::onImGuiRender(float dt) {
 
             ImGui::PopID();
         }
+    }
+    ImGui::End();
 
+    ImGui::Begin("Block");
+
+    if(ImGui::CollapsingHeader("Blocks")) {
+
+        int id = 1;
+        for(auto block : blocks) {
+
+            ImGui::PushID(id++);
+
+            if(ImGui::TreeNode(block->tag.c_str())) {
+
+                ImGui::Checkbox("Follow Mouse##block", &block->mouseTrace);
+                if(!block->mouseTrace) {
+
+                    ImGui::PushItemWidth(100);
+
+                    ImGui::DragFloat("##PosX##block", &block->pos.x, 0.1f); ImGui::SameLine();
+                    ImGui::DragFloat("##PosY##block", &block->pos.y, 0.1f); ImGui::SameLine();
+                    ImGui::Text("Light Position##block");
+                    ImGui::PopItemWidth();
+                }
+
+                ImGui::ColorEdit4("##Color##block", glm::value_ptr(block->color));
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
     }
 
     ImGui::End();
@@ -244,12 +290,11 @@ void Game::render() {
     glClear(GL_STENCIL_BUFFER_BIT);
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
-        Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], p4(1, 0, 0, 1));
+        Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], block->color);
     }
     fbo2->unbind();
 
 
     glBlendFunc(GL_ONE, GL_ONE);
     Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID(), fbo3->getColorAttachmentRendererID());
-//    Renderer::DrawSingleTexture(fbo2->getColorAttachmentRendererID());
 }

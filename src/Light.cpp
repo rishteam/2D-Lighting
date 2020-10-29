@@ -5,10 +5,11 @@
 #include <Game.h>
 
 int Light::id = 0;
+int Light::mouseTraceCnt = 0;
 
 Light::Light(p2 pos, p4 color, float r, float constant, float linear, float quadratic) : pos(pos), color(color), radius(r), constant(constant), linear(linear), quadratic(quadratic){
 
-    tag = "Light " + std::to_string(id++);
+    tag = "Light" + std::to_string(id++);
 }
 
 void Light::onUpdate(float dt) {

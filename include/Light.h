@@ -26,8 +26,9 @@ public:
 
     bool traceMouse = false;
 
-private:
+    static int mouseTraceCnt;
 
+private:
     static int id;
 };
 
