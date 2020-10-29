@@ -159,6 +159,9 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
     data->lightShader->setFloat4("lightColor", light.color);
     data->lightShader->setFloat2("lightPos", p2(light.pos.x, Game::Get().GetHeight() - light.pos.y));
     data->lightShader->setFloat("lightRadius", light.radius);
+    data->lightShader->setFloat("constant", light.constant);
+    data->lightShader->setFloat("linear", light.linear);
+    data->lightShader->setFloat("quadratic", light.quadratic);
     data->lightVertexArray->bind();
     glDrawElements(GL_TRIANGLES, data->vertexArray->getIndexBuffer()->getCount(), GL_UNSIGNED_INT, nullptr);
     data->lightVertexArray->unbind();

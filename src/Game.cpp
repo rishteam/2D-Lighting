@@ -41,15 +41,15 @@ void Game::init() {
     int lightCount = 1;
 
     p2 mousePos = {20, 20};
-    p4 color    = {r(), r(), r(), 1};
+    p4 color    = {1, 1, 1, 1};
     lights.push_back(std::make_shared<Light>(mousePos, color, ri()));
     p2 size{100, 100};
-//    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
-//    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
+    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
+    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
     blocks.push_back(std::make_shared<Block>(p2{500, 300}, size));
-//    blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
-//    blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
-//    blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
+    blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
+    blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
+    blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
 
     fbo = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo2 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
@@ -81,7 +81,7 @@ void Game::run() {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 //        glClearColor(1, 1, 1, 1);
-
+        window.clear(sf::Color(0, 0, 0));
         auto clock_end = std::chrono::steady_clock::now();
         std::chrono::duration<float> time_span = std::chrono::duration_cast<std::chrono::duration<float>>(clock_end - clock_prev);
         dt = time_span.count();
@@ -89,9 +89,12 @@ void Game::run() {
 
         processInput(dt);
         update(dt);
+        render();
         ImGui::SFML::Update(window, deltaClock.restart());
         onImGuiRender(dt);
-        render();
+        ImGui::SFML::Render(window);
+
+        window.display();
     }
 }
 
@@ -104,8 +107,13 @@ void Game::processInput(float dt) {
         if(!flag) {
 
             flag = true;
-            lights.push_back(std::make_shared<Light>(p2{100, 100}, p4{r(), r(), r(), 1}, ri()));
-            index++;
+            for(auto light: lights) {
+
+                if(light->traceMouse) {
+
+                    light->traceMouse = false;
+                }
+            }
         }
     }
     else {
@@ -134,13 +142,50 @@ uint32_t Game::loadTexture(std::string path) {
 
 void Game::update(float dt) {
 
-    lights[index]->onUpdate(dt);
+    for(auto light : lights) {
+
+        light->onUpdate(dt);
+    }
 }
 
 void Game::onImGuiRender(float dt) {
 
-    window.clear(sf::Color(1, 1, 1));
-    ImGui::SFML::Render(window);
+    ImGui::Begin("Light Attribute");
+
+    if(ImGui::CollapsingHeader("Lights")) {
+
+        int id = 1;
+        for(auto light : lights) {
+
+            ImGui::PushID(id++);
+            if(ImGui::TreeNode(light->tag.c_str())) {
+
+                ImGui::Checkbox("Follow Mouse", &light->traceMouse);
+
+                if(!light->traceMouse) {
+
+                    ImGui::PushItemWidth(100);
+
+                    ImGui::DragFloat("##PosX", &light->pos.x, 0.1f); ImGui::SameLine();
+                    ImGui::DragFloat("##PosY", &light->pos.y, 0.1f); ImGui::SameLine();
+                    ImGui::Text("Light Position");
+                    ImGui::PopItemWidth();
+                }
+
+                ImGui::ColorEdit4("##Color", glm::value_ptr(light->color));
+
+                ImGui::DragFloat("##Constant", &light->constant, 0.0001, 0.f, 1.f, "%.06f");
+                ImGui::DragFloat("##Linear", &light->linear, 0.00001, 0.f, 0.1f, "%.06f");
+                ImGui::DragFloat("##Quardratic", &light->quadratic, 0.000001, 0.f, 0.1f, "%.06f");
+                ImGui::TreePop();
+            }
+
+            ImGui::PopID();
+        }
+
+    }
+
+    ImGui::End();
 }
 
 void Game::render() {
@@ -164,8 +209,6 @@ void Game::render() {
             std::vector<p2> vertices = block->getVertices();
             for(int i = 0 ; i < vertices.size() ; i++) {
 
-//                if(glm::distance(vertices[i], light->pos) > light->radius)
-//                    continue;
                 p2 currentVertex  = vertices[i];
                 p2 nextVertex     = vertices[(i+1)%vertices.size()];
                 p2 edge           = nextVertex - currentVertex;
@@ -177,7 +220,6 @@ void Game::render() {
                     p2 point1 = (currentVertex + lightToCurrent * 800.f) ;
                     p2 point2 = (nextVertex + (nextVertex - light->pos)* 800.f) ;
                     Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0.0, 0.0, 0.0, 1.));
-//                    std::cout << currentVertex.x << " " << currentVertex.y << " || " << nextVertex.x << " " << nextVertex.y << std::endl;
                 }
             }
         }
@@ -210,5 +252,4 @@ void Game::render() {
     glBlendFunc(GL_ONE, GL_ONE);
     Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID(), fbo3->getColorAttachmentRendererID());
 //    Renderer::DrawSingleTexture(fbo2->getColorAttachmentRendererID());
-    window.display();
 }
