@@ -31,6 +31,25 @@ Game::Game(float width, float height) : width_(width), height_(height){
     }
 }
 
+uint32_t Game::loadTexture(std::string path) {
+
+    sf::Image img;
+    img.loadFromFile(path);
+    img.flipVertically();
+
+    uint32_t t;
+    glGenTextures(1, &t);
+    glBindTexture(GL_TEXTURE_2D, t);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getSize().x, img.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void*)img.getPixelsPtr());
+    glGenerateMipmap(GL_TEXTURE_2D);
+    return t;
+}
+
+
 void Game::init() {
 
     Renderer::Init();
@@ -56,7 +75,7 @@ void Game::init() {
     fbo3 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo4 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
 
-    textureID = loadTexture("assets/1.png");
+    textureID = loadTexture("assets/1.jpg");
 }
 
 void Game::run() {
@@ -130,29 +149,11 @@ void Game::processInput(float dt) {
         if(!flag) {
 
             flag = true;
-            lights.push_back(std::make_shared<Light>(mousePos, p4{r(), r(), r(), r()}, ri()));
+            lights.push_back(std::make_shared<Light>(mousePos, p4{1, 1, 1, 1}, ri()));
         }
     }
     else flag = false;
 }
-
-uint32_t Game::loadTexture(std::string path) {
-
-    sf::Image img;
-    img.loadFromFile(path);
-    img.flipVertically();
-
-    uint32_t texture;
-    glGenTextures(1, &texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getSize().x, img.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void*)img.getPixelsPtr());
-    glGenerateMipmap(GL_TEXTURE_2D);
-    return texture;
-}
-
 
 void Game::update(float dt) {
 
@@ -265,7 +266,7 @@ void Game::render() {
                 {
                     p2 point1 = (currentVertex + lightToCurrent * 800.f) ;
                     p2 point2 = (nextVertex + (nextVertex - light->pos)* 800.f) ;
-                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0.0, 0.0, 0.0, 1.));
+                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0.65, .635, .596, .1));
                 }
             }
         }
@@ -282,18 +283,13 @@ void Game::render() {
     fbo->unbind();
     fbo2->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-//    glStencilFunc(GL_ALWAYS, 1, 1);
-//    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 1, 1, 1));
-//    glEnable(GL_BLEND);
-//    glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
-    glClear(GL_STENCIL_BUFFER_BIT);
+//    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 1, 1, 1));
+     Renderer::DrawSingleTexture(textureID);
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
         Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], block->color);
     }
     fbo2->unbind();
-
 
     glBlendFunc(GL_ONE, GL_ONE);
     Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID(), fbo3->getColorAttachmentRendererID());

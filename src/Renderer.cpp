@@ -92,7 +92,7 @@ void Renderer::Init() {
     data->textureVAO->unbind();
     data->singleTextureShader = std::make_shared<Shader>("shader/singleTexture.vs", "shader/singleTexture.fs");
     data->singleTextureShader->bind();
-    data->singleTextureShader->setInt("screenTexture", 0);
+    data->singleTextureShader->setInt("screenTexture", 4);
 }
 
 void Renderer::DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 pos4, const p4 color) {
@@ -190,7 +190,7 @@ void Renderer::DrawSingleTexture(uint32_t id) {
 
     data->singleTextureShader->bind();
     data->textureVAO->bind();
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, id);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     data->textureVAO->unbind();
