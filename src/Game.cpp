@@ -19,7 +19,7 @@ float ri() {
 
 Game *Game::s_instance = new Game(1280, 720);
 
-Game::Game(float width, float height) : width_(width), height_(height){
+Game::Game(float width, float height) : width_(width), height_(height), ambient(0.5), ambientMask(p4(1, 1, 1, 0.5)){
 
     window.create(sf::VideoMode(width, height), "Ray-Casting");
     window.setFramerateLimit(60);
@@ -172,6 +172,9 @@ void Game::onImGuiRender(float dt) {
 
     ImGui::Begin("Light Attribute");
 
+//    ImGui::DragFloat("Ambient", &ambient, 0.01f, 0, 1, "%.2f");
+    ImGui::ColorEdit4("Ambient", glm::value_ptr(ambientMask), ImGuiColorEditFlags_Float);
+
     if(ImGui::CollapsingHeader("Lights")) {
 
         int id = 1;
@@ -246,6 +249,7 @@ void Game::render() {
     fbo->unbind();
 
     fbo->bind();
+    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), ambientMask);
     for(auto light : lights) {
 
         glColorMask(false, false, false, false);

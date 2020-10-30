@@ -57,6 +57,8 @@ private:
     std::shared_ptr<Framebuffer> fbo3;
     std::shared_ptr<Framebuffer> fbo4;
     int index;
+    float ambient;
+    p4 ambientMask;
 };
 
 
