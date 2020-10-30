@@ -4,8 +4,6 @@
 #include <Game.h>
 #include <SFML/Graphics.hpp>
 #include <Renderer.h>
-//#include <camera.h>
-//#include <player.h>
 
 float r() {
 
@@ -19,7 +17,7 @@ float ri() {
 
 Game *Game::s_instance = new Game(1280, 720);
 
-Game::Game(float width, float height) : width_(width), height_(height), ambient(0.5), ambientMask(p4(1, 1, 1, 0.5)){
+Game::Game(float width, float height) : width_(width), height_(height), ambientMask(p4(1, 1, 1, 0.5)){
 
     window.create(sf::VideoMode(width, height), "Ray-Casting");
     window.setFramerateLimit(60);
@@ -73,7 +71,6 @@ void Game::init() {
     fbo = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo2 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo3 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
-    fbo4 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
 
     textureID = loadTexture("assets/1.jpg");
 }
@@ -98,8 +95,6 @@ void Game::run() {
             if(event.type == sf::Event::Closed) running = false;
         }
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-//        glClearColor(1, 1, 1, 1);
         window.clear(sf::Color(0, 0, 0));
         auto clock_end = std::chrono::steady_clock::now();
         std::chrono::duration<float> time_span = std::chrono::duration_cast<std::chrono::duration<float>>(clock_end - clock_prev);
@@ -172,7 +167,6 @@ void Game::onImGuiRender(float dt) {
 
     ImGui::Begin("Light Attribute");
 
-//    ImGui::DragFloat("Ambient", &ambient, 0.01f, 0, 1, "%.2f");
     ImGui::ColorEdit4("Ambient", glm::value_ptr(ambientMask), ImGuiColorEditFlags_Float);
 
     if(ImGui::CollapsingHeader("Lights")) {
@@ -245,10 +239,10 @@ void Game::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     fbo->bind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     fbo->unbind();
 
     fbo->bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), ambientMask);
     for(auto light : lights) {
 
@@ -287,7 +281,6 @@ void Game::render() {
     fbo->unbind();
     fbo2->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-//    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), p4(1, 1, 1, 1));
      Renderer::DrawSingleTexture(textureID);
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
@@ -296,5 +289,5 @@ void Game::render() {
     fbo2->unbind();
 
     glBlendFunc(GL_ONE, GL_ONE);
-    Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID(), fbo3->getColorAttachmentRendererID());
+    Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID());
 }

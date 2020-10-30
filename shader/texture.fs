@@ -5,7 +5,6 @@ in vec2 TexCoords;
 
 uniform sampler2D lightTexture;
 uniform sampler2D worldGeometry;
-uniform sampler2D shadowTexture;
 
 void main()
 {
