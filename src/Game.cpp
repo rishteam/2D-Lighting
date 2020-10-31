@@ -47,8 +47,52 @@ uint32_t Game::loadTexture(std::string path) {
     return t;
 }
 
+p2 Game::rotate(float angle) {
+
+    p2 dir = {1, 0};
+    glm::mat4 trans{1.f};
+    trans = glm::rotate(trans, glm::radians(angle), p3(0.f, 0.f, 1.f));
+
+    dir = trans * glm::vec4(dir, 0, 0);
+    return dir;
+}
+
+p2 Game::cast(p2 lightPos, p2 dir, p2 pos1, p2 pos2) {
+
+    float r_px = lightPos.x;
+    float r_py = lightPos.y;
+    float r_dx = dir.x;
+    float r_dy = dir.y;
+
+    float s_px = pos1.x;
+    float s_py = pos1.y;
+    float s_dx = pos2.x-pos1.x;
+    float s_dy = pos2.y-pos1.y;
+
+    //is parallel
+    float r_mag = sqrt(r_dx*r_dx+r_dy*r_dy);
+    float s_mag = sqrt(s_dx*s_dx+s_dy*s_dy);
+    if(r_dx/r_mag==s_dx/s_mag && r_dy/r_mag==s_dy/s_mag)
+        return {-100000, -100000};
+
+    float Tb = (r_dx*(s_py-r_py) + r_dy*(r_px-s_px))/(s_dx*r_dy - s_dy*r_dx);
+    float Ta = (s_px+s_dx*Tb-r_px)/r_dx;
+
+    if( Ta < 0 )
+        return {-100000, -100000};
+    if( Tb < 0 || Tb > 1 )
+        return {-100000, -100000};
+
+    return {r_px+r_dx*Ta,r_py+r_dy*Ta};
+}
+
 
 void Game::init() {
+
+    viewPortCoord.push_back(std::make_pair(p2{0, 0}, p2{0, height_}));
+    viewPortCoord.push_back(std::make_pair(p2{0, height_}, p2{width_, height_}));
+    viewPortCoord.push_back(std::make_pair(p2{width_, height_}, p2{width_, 0}));
+    viewPortCoord.push_back(std::make_pair(p2{width_, 0}, p2{0, 0}));
 
     Renderer::Init();
 
@@ -57,16 +101,20 @@ void Game::init() {
     index = 0;
     int lightCount = 1;
 
-    p2 mousePos = {20, 20};
+    p2 mousePos = {650, 300};
     p4 color    = {1, 1, 1, 1};
     lights.push_back(std::make_shared<Light>(mousePos, color, ri()));
+
+//    lights.push_back(std::make_shared<Light>(p2(600, 300), p4(1, 1, 1, 1), ri()));
+
+
     p2 size{100, 100};
-    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{500, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{500, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
 
     fbo = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo2 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
@@ -244,6 +292,7 @@ void Game::render() {
     fbo->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), ambientMask);
+//    Renderer::DrawQuad(p2(0, 0), p2(0, 100), p2(100, 100), p2(Game::Get().GetWidth(), 0), ambientMask);
     for(auto light : lights) {
 
         glColorMask(false, false, false, false);
@@ -264,24 +313,44 @@ void Game::render() {
                 {
                     p2 point1 = (currentVertex + lightToCurrent * 800.f) ;
                     p2 point2 = (nextVertex + (nextVertex - light->pos)* 800.f) ;
-                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0.65, .635, .596, .1));
+                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0, 0, 0, 0.5));
                 }
             }
         }
 
+        p2 dir1 = rotate(light->angle);
+        p2 dir2 = rotate(-light->angle);
+        p2 point1;
+        p2 point2;
+        for(int i = 0 ; i < viewPortCoord.size() ; i++) {
+
+            p2 tmp = cast(light->pos, dir1, viewPortCoord[i].first, viewPortCoord[i].second);
+            if(tmp != p2(-100000, -100000)) {
+
+                point1 = tmp;
+            }
+
+            tmp = cast(light->pos, dir2, viewPortCoord[i].first, viewPortCoord[i].second);
+            if(tmp != p2(-100000, -100000)) {
+
+                point2 = tmp;
+            }
+        }
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         glStencilFunc(GL_EQUAL, 0, 1);
         glColorMask(true, true, true, true);
-        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
+//        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
+        Renderer::DrawLight(light->pos, point1, point1, point2, *light);
+//        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
         glClear(GL_STENCIL_BUFFER_BIT);
         glDisable(GL_BLEND);
     }
     fbo->unbind();
     fbo2->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-     Renderer::DrawSingleTexture(textureID);
+    Renderer::DrawSingleTexture(textureID);
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
         Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], block->color);

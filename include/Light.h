@@ -17,10 +17,12 @@ public:
 
     p2 pos;
     p4 color;
-    float radius;
+    float radius; //
     float constant;
     float linear;
     float quadratic;
+    float angle; // degree
+
 
     std::string tag;
 

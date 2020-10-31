@@ -41,9 +41,16 @@ public:
 
     uint32_t loadTexture(std::string path);
 
+    p2 rotate(float angle);
+
+    p2 cast(p2 lightPos, p2 dir, p2 pos1, p2 pos2);
+
     void run();
 
 private:
+
+
+    std::vector<std::pair<p2, p2>> viewPortCoord;
 
     float width_, height_;
     sf::RenderWindow window;
