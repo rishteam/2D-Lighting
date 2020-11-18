@@ -10,6 +10,7 @@
 #include <Block.h>
 #include <Light.h>
 #include <Framebuffer.h>
+#include <OrthographicCamera.h>
 
 class Game {
 
@@ -52,6 +53,8 @@ private:
 
     std::vector<std::pair<p2, p2>> viewPortCoord;
 
+    std::shared_ptr<OrthographicCamera> camera;
+
     float width_, height_;
     sf::RenderWindow window;
 
@@ -59,8 +62,8 @@ private:
 
     std::vector<std::shared_ptr<Light>> lights;
     std::vector<std::shared_ptr<Block>> blocks;
-    std::shared_ptr<Framebuffer> fbo;
-    std::shared_ptr<Framebuffer> fbo2;
+    std::shared_ptr<Framebuffer> lightFBO;
+    std::shared_ptr<Framebuffer> worldFBO;
     std::shared_ptr<Framebuffer> fbo3;
     int index;
     p4 ambientMask;

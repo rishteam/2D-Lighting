@@ -89,35 +89,38 @@ p2 Game::cast(p2 lightPos, p2 dir, p2 pos1, p2 pos2) {
 
 void Game::init() {
 
+    camera = std::make_shared<OrthographicCamera>(-1, 1, -1, 1);
+
     viewPortCoord.push_back(std::make_pair(p2{0, 0}, p2{0, height_}));
     viewPortCoord.push_back(std::make_pair(p2{0, height_}, p2{width_, height_}));
     viewPortCoord.push_back(std::make_pair(p2{width_, height_}, p2{width_, 0}));
     viewPortCoord.push_back(std::make_pair(p2{width_, 0}, p2{0, 0}));
 
-    Renderer::Init();
+    Renderer::Init(camera);
 
     srand(time(NULL));
 
     index = 0;
     int lightCount = 1;
 
-    p2 mousePos = {650, 300};
+    p2 mousePos = {0, 0};
     p4 color    = {1, 1, 1, 1};
     lights.push_back(std::make_shared<Light>(mousePos, color, ri()));
 
 //    lights.push_back(std::make_shared<Light>(p2(600, 300), p4(1, 1, 1, 1), ri()));
 
 
-    p2 size{100, 100};
+    p2 size{0.3, 0.3};
 //    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
 //    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
 //    blocks.push_back(std::make_shared<Block>(p2{500, 300}, size));
-//    blocks.push_back(std::make_shared<Block>(p2{700, 300}, size));
-//    blocks.push_back(std::make_shared<Block>(p2{900, 300}, size));
-//    blocks.push_back(std::make_shared<Block>(p2{1100, 300}, size));
+    blocks.push_back(std::make_shared<Block>(p2{-1, 0.7}, size));
+    blocks.push_back(std::make_shared<Block>(p2{-1, -1}, size));
+    blocks.push_back(std::make_shared<Block>(p2{0.7, 0.7}, size));
+    blocks.push_back(std::make_shared<Block>(p2{0.7, -1}, size));
 
-    fbo = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
-    fbo2 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
+    lightFBO = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
+    worldFBO = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     fbo3 = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
 
     textureID = loadTexture("assets/1.jpg");
@@ -214,19 +217,18 @@ void Game::update(float dt) {
 void Game::onImGuiRender(float dt) {
 
     ImGui::Begin("Light Attribute");
+    {
+        ImGui::ColorEdit4("Ambient", glm::value_ptr(ambientMask), ImGuiColorEditFlags_Float);
 
-    ImGui::ColorEdit4("Ambient", glm::value_ptr(ambientMask), ImGuiColorEditFlags_Float);
+        if(ImGui::CollapsingHeader("Lights")) {
 
-    if(ImGui::CollapsingHeader("Lights")) {
+            int id = 1;
+            for(auto light : lights) {
 
-        int id = 1;
-        for(auto light : lights) {
+                ImGui::PushID(id++);
+                if(ImGui::TreeNode(light->tag.c_str())) {
 
-            ImGui::PushID(id++);
-            if(ImGui::TreeNode(light->tag.c_str())) {
-
-                ImGui::Checkbox("Follow Mouse", &light->traceMouse);
-                if(!light->traceMouse) {
+                    ImGui::DragFloat("LightMul", &light->lightMul, 0.1f, 0, FLT_MAX);
 
                     ImGui::PushItemWidth(100);
 
@@ -234,64 +236,76 @@ void Game::onImGuiRender(float dt) {
                     ImGui::DragFloat("##PosY", &light->pos.y, 0.1f); ImGui::SameLine();
                     ImGui::Text("Light Position");
                     ImGui::PopItemWidth();
+//                ImGui::Checkbox("Follow Mouse", &light->traceMouse);
+//                if(!light->traceMouse) {
+//
+//
+//                }
+                    ImGui::ColorEdit4("##Color", glm::value_ptr(light->color));
+
+                    ImGui::DragFloat("##Constant", &light->constant, 0.0001, 0.f, 1.f, "%.06f");
+                    ImGui::DragFloat("##Linear", &light->linear, 0.00001, 0.f, 0.1f, "%.06f");
+                    ImGui::DragFloat("##Quardratic", &light->quadratic, 0.000001, 0.f, 0.1f, "%.06f");
+                    ImGui::TreePop();
                 }
-                ImGui::ColorEdit4("##Color", glm::value_ptr(light->color));
 
-                ImGui::DragFloat("##Constant", &light->constant, 0.0001, 0.f, 1.f, "%.06f");
-                ImGui::DragFloat("##Linear", &light->linear, 0.00001, 0.f, 0.1f, "%.06f");
-                ImGui::DragFloat("##Quardratic", &light->quadratic, 0.000001, 0.f, 0.1f, "%.06f");
-                ImGui::TreePop();
+                ImGui::PopID();
             }
-
-            ImGui::PopID();
         }
     }
     ImGui::End();
 
     ImGui::Begin("Block");
+    {
+        if(ImGui::CollapsingHeader("Blocks")) {
 
-    if(ImGui::CollapsingHeader("Blocks")) {
+            int id = 1;
+            for(auto block : blocks) {
 
-        int id = 1;
-        for(auto block : blocks) {
+                ImGui::PushID(id++);
 
-            ImGui::PushID(id++);
+                if(ImGui::TreeNode(block->tag.c_str())) {
 
-            if(ImGui::TreeNode(block->tag.c_str())) {
+                    ImGui::Checkbox("Follow Mouse##block", &block->mouseTrace);
+                    if(!block->mouseTrace) {
 
-                ImGui::Checkbox("Follow Mouse##block", &block->mouseTrace);
-                if(!block->mouseTrace) {
+                        ImGui::PushItemWidth(100);
 
-                    ImGui::PushItemWidth(100);
+                        ImGui::DragFloat("##PosX##block", &block->pos.x, 0.1f); ImGui::SameLine();
+                        ImGui::DragFloat("##PosY##block", &block->pos.y, 0.1f); ImGui::SameLine();
+                        ImGui::Text("Block Position##block");
+                        ImGui::PopItemWidth();
+                    }
 
-                    ImGui::DragFloat("##PosX##block", &block->pos.x, 0.1f); ImGui::SameLine();
-                    ImGui::DragFloat("##PosY##block", &block->pos.y, 0.1f); ImGui::SameLine();
-                    ImGui::Text("Light Position##block");
-                    ImGui::PopItemWidth();
+                    ImGui::ColorEdit4("##Color##block", glm::value_ptr(block->color));
+                    ImGui::TreePop();
                 }
-
-                ImGui::ColorEdit4("##Color##block", glm::value_ptr(block->color));
-                ImGui::TreePop();
+                ImGui::PopID();
             }
-            ImGui::PopID();
         }
     }
-
     ImGui::End();
+
+//    ImGui::Begin("Camera");
+//    {
+//        ImGui::Text("", glm::value_ptr(camera->getProjectionMatrix()));
+//    }
+//    ImGui::End();
 }
 
 void Game::render() {
 
     // Shadow
+    glEnable(GL_BLEND);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    fbo->bind();
-    fbo->unbind();
+    lightFBO->bind();
+    lightFBO->unbind();
 
-    fbo->bind();
+    lightFBO->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Renderer::DrawQuad(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), ambientMask);
+    Renderer::DrawQuad(p2(-1, -1), p2(-1, 1), p2(1, 1), p2(1, -1), ambientMask);
 //    Renderer::DrawQuad(p2(0, 0), p2(0, 100), p2(100, 100), p2(Game::Get().GetWidth(), 0), ambientMask);
     for(auto light : lights) {
 
@@ -311,8 +325,8 @@ void Game::render() {
 
                 if(glm::dot(normal, lightToCurrent) < 0)
                 {
-                    p2 point1 = (currentVertex + lightToCurrent * 800.f) ;
-                    p2 point2 = (nextVertex + (nextVertex - light->pos)* 800.f) ;
+                    p2 point1 = (currentVertex + lightToCurrent * 10.f) ;
+                    p2 point2 = (nextVertex + (nextVertex - light->pos)* 10.f) ;
                     Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0, 0, 0, 0.5));
                 }
             }
@@ -341,22 +355,24 @@ void Game::render() {
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         glStencilFunc(GL_EQUAL, 0, 1);
         glColorMask(true, true, true, true);
-//        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
-        Renderer::DrawLight(light->pos, point1, point1, point2, *light);
+        Renderer::DrawLight({-1, -1}, {-1, 1}, {1, 1}, {1, -1}, *light);
+//        Renderer::DrawLight(light->pos, point1, point1, point2, *light);
 //        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
         glClear(GL_STENCIL_BUFFER_BIT);
         glDisable(GL_BLEND);
     }
-    fbo->unbind();
-    fbo2->bind();
+    lightFBO->unbind();
+
+    worldFBO->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Renderer::DrawSingleTexture(textureID);
+    Renderer::DrawSingleTexture(textureID); // bg
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
         Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], block->color);
     }
-    fbo2->unbind();
+    worldFBO->unbind();
 
     glBlendFunc(GL_ONE, GL_ONE);
-    Renderer::DrawTexture(fbo->getColorAttachmentRendererID(), fbo2->getColorAttachmentRendererID());
+    Renderer::DrawSingleTexture(worldFBO->getColorAttachmentRendererID());
+//    Renderer::DrawTexture(lightFBO->getColorAttachmentRendererID(), worldFBO->getColorAttachmentRendererID());
 }

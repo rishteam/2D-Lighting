@@ -4,6 +4,7 @@
 #include <Renderer.h>
 #include <Game.h>
 #include <Vertices.h>
+#include <OrthographicCamera.h>
 
 p3 toNDC(p2 point){
 
@@ -17,6 +18,8 @@ p3 toNDC(p2 point){
 }
 
 struct RendererData {
+
+    std::shared_ptr<OrthographicCamera> m_camera;
 
     std::shared_ptr<VertexArray> vertexArray;
     std::shared_ptr<VertexBuffer> vertexBuffer;
@@ -41,9 +44,10 @@ struct RendererData {
 
 static std::unique_ptr<RendererData> data;
 
-void Renderer::Init() {
+void Renderer::Init(std::shared_ptr<OrthographicCamera> &camera) {
 
     data = std::make_unique<RendererData>();
+    setCamera(camera);
     data->shader = std::make_shared<Shader>("shader/2D-Lighting.vs", "shader/2D-Lighting.fs");
     data->lightShader = std::make_shared<Shader>("shader/light.vs", "shader/light.fs");
     data->irregularQuadShader = std::make_shared<Shader>("shader/irregularQuadShader.vs", "shader/irregularQuadShader.fs");
@@ -70,11 +74,11 @@ void Renderer::Init() {
     data->lightVertexArray->unbind();
 
     data->shader->bind();
-    data->shader->setMat4("projection", data->projection);
+    data->shader->setMat4("projection", data->m_camera->getProjectionMatrix());
     data->lightShader->bind();
-    data->lightShader->setMat4("projection", data->projection);
+    data->lightShader->setMat4("projection", data->m_camera->getProjectionMatrix());
     data->irregularQuadShader->bind();
-    data->irregularQuadShader->setMat4("projection", data->projection);
+    data->irregularQuadShader->setMat4("projection", data->m_camera->getProjectionMatrix());
 
     data->textureVAO = std::make_shared<VertexArray>();
     data->textureVBO = std::make_shared<VertexBuffer>(quadVertices, sizeof(quadVertices));
@@ -92,6 +96,12 @@ void Renderer::Init() {
     data->singleTextureShader = std::make_shared<Shader>("shader/singleTexture.vs", "shader/singleTexture.fs");
     data->singleTextureShader->bind();
     data->singleTextureShader->setInt("screenTexture", 4);
+    data->singleTextureShader->setMat4("projection", data->m_camera->getProjectionMatrix());
+}
+
+void Renderer::setCamera(std::shared_ptr<OrthographicCamera> &camera) {
+
+    data->m_camera = camera;
 }
 
 void Renderer::DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 pos4, const p4 color) {
@@ -139,16 +149,18 @@ void Renderer::DrawQuad(p2 pos, p2 size, p4 color) {
 void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
 
     float vertices_[] = {
-
-        pos1.x, pos1.y, 0,
-        pos2.x, pos2.y, 0,
-        pos4.x, pos4.y, 0,
-        pos3.x, pos3.y, 0
+        pos1.x, pos1.y, 0, light.pos.x, light.pos.y,
+        pos2.x, pos2.y, 0, light.pos.x, light.pos.y,
+        pos4.x, pos4.y, 0, light.pos.x, light.pos.y,
+        pos3.x, pos3.y, 0, light.pos.x, light.pos.y
     };
+
+    printf(">> %.2f %.2f\n", light.pos.x, light.pos.y);
 
     data->polygonVertexBuffer->setData(vertices_, sizeof(vertices_));
     BufferLayout layout = {
-            {ShaderDataType::Float3, "aPos"}
+            {ShaderDataType::Float3, "aPos"},
+            {ShaderDataType::Float2, "pos"}
     };
 
     data->polygonVertexBuffer->setLayout(layout);
@@ -156,7 +168,8 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
 
     data->lightShader->bind();
     data->lightShader->setFloat4("lightColor", light.color);
-    data->lightShader->setFloat2("lightPos", p2(light.pos.x, Game::Get().GetHeight() - light.pos.y));
+//    data->lightShader->setFloat2("lightPos", p2(light.pos.x, light.pos.y));
+    data->lightShader->setFloat("disMul", light.lightMul);
     data->lightShader->setFloat("lightRadius", light.radius);
     data->lightShader->setFloat("constant", light.constant);
     data->lightShader->setFloat("linear", light.linear);
@@ -169,10 +182,14 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
 void Renderer::DrawTexture(uint32_t id, uint32_t id2) {
 
     data->textureShader->bind();
+
+    // Bind Texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, id);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, id2);
+
+    // Draw QUad
     data->textureVAO->bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
     data->textureVAO->unbind();
@@ -187,4 +204,3 @@ void Renderer::DrawSingleTexture(uint32_t id) {
     glDrawArrays(GL_TRIANGLES, 0, 6);
     data->textureVAO->unbind();
 }
-

@@ -22,6 +22,7 @@ public:
     float linear;
     float quadratic;
     float angle; // degree
+    float lightMul;
 
 
     std::string tag;

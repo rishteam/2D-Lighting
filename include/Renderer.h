@@ -8,12 +8,13 @@
 #include <shader.h>
 #include <VertexArray.h>
 #include <Light.h>
+#include <OrthographicCamera.h>
 
 class Renderer {
 
 public:
 
-    static void Init();
+    static void Init(std::shared_ptr<OrthographicCamera> &camera);
 
     static void DrawQuad(const p2 pos, const p2 size, const p4 color);
 
@@ -24,6 +25,8 @@ public:
     static void DrawTexture(uint32_t id, uint32_t id2);
 
     static void DrawSingleTexture(uint32_t id);
+
+    static void setCamera(std::shared_ptr<OrthographicCamera> &camera);
 
 private:
 

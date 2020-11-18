@@ -15,7 +15,8 @@ add_executable(2D-Lighting
         src/Shader.cpp
         src/VertexArray.cpp
         src/buffer.cpp
-        src/Framebuffer.cpp)
+        src/Framebuffer.cpp
+        src/OrthographicCamera.cpp)
 include_directories(./include)
 target_precompile_headers(2D-Lighting PUBLIC include/pch.h)
 
