@@ -11,6 +11,7 @@
 #include <Light.h>
 #include <Framebuffer.h>
 #include <OrthographicCamera.h>
+#include <OrthographicCameraController.h>
 
 class Game {
 
@@ -50,6 +51,7 @@ public:
 
 private:
 
+    std::shared_ptr<OrthographicCameraController> cameraController;
 
     std::vector<std::pair<p2, p2>> viewPortCoord;
 

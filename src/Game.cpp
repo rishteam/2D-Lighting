@@ -89,14 +89,16 @@ p2 Game::cast(p2 lightPos, p2 dir, p2 pos1, p2 pos2) {
 
 void Game::init() {
 
-    camera = std::make_shared<OrthographicCamera>(-1, 1, -1, 1);
+    cameraController = std::make_shared<OrthographicCameraController>(Game::Get().GetWidth()/Game::Get().GetHeight(), false, true);
 
     viewPortCoord.push_back(std::make_pair(p2{0, 0}, p2{0, height_}));
     viewPortCoord.push_back(std::make_pair(p2{0, height_}, p2{width_, height_}));
     viewPortCoord.push_back(std::make_pair(p2{width_, height_}, p2{width_, 0}));
     viewPortCoord.push_back(std::make_pair(p2{width_, 0}, p2{0, 0}));
 
-    Renderer::Init(camera);
+    Renderer::Init();
+
+    Renderer::setCamera(cameraController->getCamera());
 
     srand(time(NULL));
 
@@ -114,10 +116,11 @@ void Game::init() {
 //    blocks.push_back(std::make_shared<Block>(p2{100, 300}, size));
 //    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
 //    blocks.push_back(std::make_shared<Block>(p2{500, 300}, size));
-    blocks.push_back(std::make_shared<Block>(p2{-1, 0.7}, size));
-    blocks.push_back(std::make_shared<Block>(p2{-1, -1}, size));
-    blocks.push_back(std::make_shared<Block>(p2{0.7, 0.7}, size));
-    blocks.push_back(std::make_shared<Block>(p2{0.7, -1}, size));
+    blocks.push_back(std::make_shared<Block>(p2{-1, 1}, size));
+    blocks.push_back(std::make_shared<Block>(p2{-1, -0.7}, size));
+    blocks.push_back(std::make_shared<Block>(p2{0.7, -0.7}, size));
+    blocks.push_back(std::make_shared<Block>(p2{0.7, 1}, size));
+//    blocks.push_back(std::make_shared<Block>(p2{-1 , 1}, size));
 
     lightFBO = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
     worldFBO = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
@@ -203,6 +206,11 @@ void Game::processInput(float dt) {
 
 void Game::update(float dt) {
 
+    cameraController->onUpdate(dt);
+    Renderer::setCamera(cameraController->getCamera());
+//    Renderer::setCamera(cameraController->getCamera());
+//    std::cout << cameraController->getCamera().getPosition().x << std::endl;
+
     for(auto light : lights) {
 
         light->onUpdate(dt);
@@ -215,6 +223,8 @@ void Game::update(float dt) {
 }
 
 void Game::onImGuiRender(float dt) {
+
+    cameraController->onImGuiRender();
 
     ImGui::Begin("Light Attribute");
     {
@@ -307,72 +317,72 @@ void Game::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     Renderer::DrawQuad(p2(-1, -1), p2(-1, 1), p2(1, 1), p2(1, -1), ambientMask);
 //    Renderer::DrawQuad(p2(0, 0), p2(0, 100), p2(100, 100), p2(Game::Get().GetWidth(), 0), ambientMask);
-    for(auto light : lights) {
-
-        glColorMask(false, false, false, false);
-        glStencilFunc(GL_ALWAYS, 1, 1);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        for(auto block : blocks) {
-
-            std::vector<p2> vertices = block->getVertices();
-            for(int i = 0 ; i < vertices.size() ; i++) {
-
-                p2 currentVertex  = vertices[i];
-                p2 nextVertex     = vertices[(i+1)%vertices.size()];
-                p2 edge           = nextVertex - currentVertex;
-                p2 normal         = p2(edge.y, -edge.x);
-                p2 lightToCurrent = currentVertex - light->pos;
-
-                if(glm::dot(normal, lightToCurrent) < 0)
-                {
-                    p2 point1 = (currentVertex + lightToCurrent * 10.f) ;
-                    p2 point2 = (nextVertex + (nextVertex - light->pos)* 10.f) ;
-                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0, 0, 0, 0.5));
-                }
-            }
-        }
-
-        p2 dir1 = rotate(light->angle);
-        p2 dir2 = rotate(-light->angle);
-        p2 point1;
-        p2 point2;
-        for(int i = 0 ; i < viewPortCoord.size() ; i++) {
-
-            p2 tmp = cast(light->pos, dir1, viewPortCoord[i].first, viewPortCoord[i].second);
-            if(tmp != p2(-100000, -100000)) {
-
-                point1 = tmp;
-            }
-
-            tmp = cast(light->pos, dir2, viewPortCoord[i].first, viewPortCoord[i].second);
-            if(tmp != p2(-100000, -100000)) {
-
-                point2 = tmp;
-            }
-        }
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        glStencilFunc(GL_EQUAL, 0, 1);
-        glColorMask(true, true, true, true);
-        Renderer::DrawLight({-1, -1}, {-1, 1}, {1, 1}, {1, -1}, *light);
-//        Renderer::DrawLight(light->pos, point1, point1, point2, *light);
-//        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
-        glClear(GL_STENCIL_BUFFER_BIT);
-        glDisable(GL_BLEND);
-    }
+//    for(auto light : lights) {
+//
+//        glColorMask(false, false, false, false);
+//        glStencilFunc(GL_ALWAYS, 1, 1);
+//        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+//        for(auto block : blocks) {
+//
+//            std::vector<p2> vertices = block->getVertices();
+//            for(int i = 0 ; i < vertices.size() ; i++) {
+//
+//                p2 currentVertex  = vertices[i];
+//                p2 nextVertex     = vertices[(i+1)%vertices.size()];
+//                p2 edge           = nextVertex - currentVertex;
+//                p2 normal         = p2(edge.y, -edge.x);
+//                p2 lightToCurrent = currentVertex - light->pos;
+//
+//                if(glm::dot(normal, lightToCurrent) < 0)
+//                {
+//                    p2 point1 = (currentVertex + lightToCurrent * 10.f) ;
+//                    p2 point2 = (nextVertex + (nextVertex - light->pos)* 10.f) ;
+//                    Renderer::DrawQuad(currentVertex, point1, point2, nextVertex, p4(0, 0, 0, 0.5));
+//                }
+//            }
+//        }
+//
+//        p2 dir1 = rotate(light->angle);
+//        p2 dir2 = rotate(-light->angle);
+//        p2 point1;
+//        p2 point2;
+//        for(int i = 0 ; i < viewPortCoord.size() ; i++) {
+//
+//            p2 tmp = cast(light->pos, dir1, viewPortCoord[i].first, viewPortCoord[i].second);
+//            if(tmp != p2(-100000, -100000)) {
+//
+//                point1 = tmp;
+//            }
+//
+//            tmp = cast(light->pos, dir2, viewPortCoord[i].first, viewPortCoord[i].second);
+//            if(tmp != p2(-100000, -100000)) {
+//
+//                point2 = tmp;
+//            }
+//        }
+//        glEnable(GL_BLEND);
+//        glBlendFunc(GL_ONE, GL_ONE);
+//        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+//        glStencilFunc(GL_EQUAL, 0, 1);
+//        glColorMask(true, true, true, true);
+//        Renderer::DrawLight({-1, -1}, {-1, 1}, {1, 1}, {1, -1}, *light);
+////        Renderer::DrawLight(light->pos, point1, point1, point2, *light);
+////        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
+//        glClear(GL_STENCIL_BUFFER_BIT);
+//        glDisable(GL_BLEND);
+//    }
     lightFBO->unbind();
 
-    worldFBO->bind();
+//    worldFBO->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Renderer::DrawSingleTexture(textureID); // bg
+    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, textureID); // bg
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
         Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], block->color);
     }
-    worldFBO->unbind();
+//    worldFBO->unbind();
 
     glBlendFunc(GL_ONE, GL_ONE);
-    Renderer::DrawSingleTexture(worldFBO->getColorAttachmentRendererID());
+//    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, worldFBO->getColorAttachmentRendererID());
 //    Renderer::DrawTexture(lightFBO->getColorAttachmentRendererID(), worldFBO->getColorAttachmentRendererID());
 }

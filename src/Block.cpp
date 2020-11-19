@@ -20,5 +20,5 @@ void Block::onUpdate(float dt) {
 
 std::vector<p2> Block::getVertices() {
 
-    return std::vector<p2> {pos, {pos.x, pos.y+size.y}, {pos.x + size.x, pos.y+size.y}, {pos.x + size.x, pos.y}};
+    return std::vector<p2> {pos, {pos.x, pos.y-size.y}, {pos.x + size.x, pos.y-size.y}, {pos.x + size.x, pos.y}};
 }

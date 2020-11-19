@@ -21,10 +21,10 @@ public:
         assert(LoadFileContent(fragSource, fragPath) == true);
 
         const char *vertSrc = vertSource.c_str();
-        printf("[DEBUG] vertex shader\n%s\n\n", vertSrc);
+//        printf("[DEBUG] vertex shader\n%s\n\n", vertSrc);
         uint32_t vert = CompileShader(GL_VERTEX_SHADER, &vertSrc);
         const char *fragSrc = fragSource.c_str();
-        printf("[DEBUG] fragment shader\n%s\n\n", fragSrc);
+//        printf("[DEBUG] fragment shader\n%s\n\n", fragSrc);
         uint32_t frag = CompileShader(GL_FRAGMENT_SHADER, &fragSrc);
         assert(vert && frag);
 

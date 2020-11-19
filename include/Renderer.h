@@ -14,7 +14,7 @@ class Renderer {
 
 public:
 
-    static void Init(std::shared_ptr<OrthographicCamera> &camera);
+    static void Init();
 
     static void DrawQuad(const p2 pos, const p2 size, const p4 color);
 
@@ -24,9 +24,9 @@ public:
 
     static void DrawTexture(uint32_t id, uint32_t id2);
 
-    static void DrawSingleTexture(uint32_t id);
+    static void DrawSingleTexture(p2 pos1, p2 pos2, p2 pos3, p2 pos4, uint32_t id);
 
-    static void setCamera(std::shared_ptr<OrthographicCamera> &camera);
+    static void setCamera(OrthographicCamera &camera);
 
 private:
 

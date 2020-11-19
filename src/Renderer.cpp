@@ -19,7 +19,7 @@ p3 toNDC(p2 point){
 
 struct RendererData {
 
-    std::shared_ptr<OrthographicCamera> m_camera;
+    OrthographicCamera m_camera;
 
     std::shared_ptr<VertexArray> vertexArray;
     std::shared_ptr<VertexBuffer> vertexBuffer;
@@ -44,17 +44,16 @@ struct RendererData {
 
 static std::unique_ptr<RendererData> data;
 
-void Renderer::Init(std::shared_ptr<OrthographicCamera> &camera) {
+void Renderer::Init() {
 
     data = std::make_unique<RendererData>();
-    setCamera(camera);
     data->shader = std::make_shared<Shader>("shader/2D-Lighting.vs", "shader/2D-Lighting.fs");
     data->lightShader = std::make_shared<Shader>("shader/light.vs", "shader/light.fs");
     data->irregularQuadShader = std::make_shared<Shader>("shader/irregularQuadShader.vs", "shader/irregularQuadShader.fs");
 
 
     data->polygonVertexArray = std::make_shared<VertexArray>();
-    data->polygonVertexBuffer = std::make_shared<VertexBuffer>(12);
+    data->polygonVertexBuffer = std::make_shared<VertexBuffer>(18);
     data->lightVertexArray = std::make_shared<VertexArray>();
 
     data->vertexArray = std::make_shared<VertexArray>();
@@ -67,27 +66,20 @@ void Renderer::Init(std::shared_ptr<OrthographicCamera> &camera) {
 
     data->indexBuffer = std::make_shared<IndexBuffer>(indices, sizeof(indices)/sizeof(uint32_t));
     data->vertexArray->setIndexBuffer(data->indexBuffer);
-    data->polygonVertexArray->setIndexBuffer(data->indexBuffer);
     data->lightVertexArray->setIndexBuffer(data->indexBuffer);
     data->polygonVertexArray->unbind();
     data->vertexArray->unbind();
     data->lightVertexArray->unbind();
 
     data->shader->bind();
-    data->shader->setMat4("projection", data->m_camera->getProjectionMatrix());
+    data->shader->setMat4("projection", data->m_camera.getProjectionMatrix());
     data->lightShader->bind();
-    data->lightShader->setMat4("projection", data->m_camera->getProjectionMatrix());
+    data->lightShader->setMat4("projection", data->m_camera.getProjectionMatrix());
     data->irregularQuadShader->bind();
-    data->irregularQuadShader->setMat4("projection", data->m_camera->getProjectionMatrix());
+    data->irregularQuadShader->setMat4("projection", data->m_camera.getProjectionMatrix());
 
     data->textureVAO = std::make_shared<VertexArray>();
-    data->textureVBO = std::make_shared<VertexBuffer>(quadVertices, sizeof(quadVertices));
-    BufferLayout layout2 = {
-            {ShaderDataType::Float2, "aPos"},
-            {ShaderDataType::Float2, "aTexCoord"}
-    };
-    data->textureVBO->setLayout(layout2);
-    data->textureVAO->addVertexBuffer(data->textureVBO);
+    data->textureVBO = std::make_shared<VertexBuffer>(24);
     data->textureShader = std::make_shared<Shader>("shader/texture.vs", "shader/texture.fs");
     data->textureShader->bind();
     data->textureShader->setInt("lightTexture", 0);
@@ -96,25 +88,32 @@ void Renderer::Init(std::shared_ptr<OrthographicCamera> &camera) {
     data->singleTextureShader = std::make_shared<Shader>("shader/singleTexture.vs", "shader/singleTexture.fs");
     data->singleTextureShader->bind();
     data->singleTextureShader->setInt("screenTexture", 4);
-    data->singleTextureShader->setMat4("projection", data->m_camera->getProjectionMatrix());
+    data->singleTextureShader->setMat4("projection", data->m_camera.getProjectionMatrix());
 }
 
-void Renderer::setCamera(std::shared_ptr<OrthographicCamera> &camera) {
+void Renderer::setCamera(OrthographicCamera& camera) {
 
     data->m_camera = camera;
+    data->shader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
+    data->lightShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
+    data->irregularQuadShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
+    data->singleTextureShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
 }
 
 void Renderer::DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 pos4, const p4 color) {
 
-    float vertices_[] = {
-
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+            // positions
             pos1.x, pos1.y, 0,
             pos2.x, pos2.y, 0,
-            pos4.x, pos4.y, 0,
-            pos3.x, pos3.y, 0
-    };
+            pos3.x, pos3.y, 0,
 
-    data->polygonVertexBuffer->setData(vertices_, sizeof(vertices_));
+            pos1.x, pos1.y, 0,
+            pos3.x, pos3.y, 0,
+            pos4.x, pos4.y, 0
+        };
+
+    data->polygonVertexBuffer->setData(quadVertices, sizeof(quadVertices));
     BufferLayout layout = {
             {ShaderDataType::Float3, "aPos"}
     };
@@ -124,10 +123,10 @@ void Renderer::DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 po
 
     data->irregularQuadShader->bind();
     data->irregularQuadShader->setFloat4("ourColor", color);
+    data->irregularQuadShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
 
-    glm::mat4 model(1.0f);
     data->polygonVertexArray->bind();
-    glDrawElements(GL_TRIANGLES, data->polygonVertexArray->getIndexBuffer()->getCount(), GL_UNSIGNED_INT, nullptr);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     data->polygonVertexArray->unbind();
 }
 
@@ -154,8 +153,6 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
         pos4.x, pos4.y, 0, light.pos.x, light.pos.y,
         pos3.x, pos3.y, 0, light.pos.x, light.pos.y
     };
-
-    printf(">> %.2f %.2f\n", light.pos.x, light.pos.y);
 
     data->polygonVertexBuffer->setData(vertices_, sizeof(vertices_));
     BufferLayout layout = {
@@ -195,9 +192,29 @@ void Renderer::DrawTexture(uint32_t id, uint32_t id2) {
     data->textureVAO->unbind();
 }
 
-void Renderer::DrawSingleTexture(uint32_t id) {
+void Renderer::DrawSingleTexture(p2 pos1, p2 pos2, p2 pos3, p2 pos4, uint32_t id) {
+
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+            // positions   // texCoords
+            pos1.x, pos1.y, 0.0f, 1.0f,
+            pos2.x, pos2.y, 0.0f, 0.0f,
+            pos3.x, pos3.y, 1.0f, 0.0f,
+
+            pos1.x, pos1.y, 0.0f, 1.0f,
+            pos3.x, pos3.y, 1.0f, 0.0f,
+            pos4.x, pos4.y, 1.0f, 1.0f
+    };
+
+    data->textureVBO->setData(quadVertices, sizeof(quadVertices));
+    BufferLayout layout2 = {
+            {ShaderDataType::Float2, "aPos"},
+            {ShaderDataType::Float2, "aTexCoord"}
+    };
+    data->textureVBO->setLayout(layout2);
+    data->textureVAO->addVertexBuffer(data->textureVBO);
 
     data->singleTextureShader->bind();
+    data->singleTextureShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
     data->textureVAO->bind();
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, id);
