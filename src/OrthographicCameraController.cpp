@@ -5,7 +5,7 @@
 
 OrthographicCameraController::OrthographicCameraController(float aspect, bool rotate, bool moveByKeyboard)
         : m_aspect(aspect),
-          m_zoom(3.f),
+          m_zoom(1.f),
           m_bounds(-m_zoom, m_zoom, -m_zoom, m_zoom),
           m_camera(m_bounds.left, m_bounds.right, m_bounds.bottom, m_bounds.top)
 {

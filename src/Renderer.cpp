@@ -20,6 +20,7 @@ p3 toNDC(p2 point){
 struct RendererData {
 
     OrthographicCamera m_camera;
+    p2 zoom;
 
     std::shared_ptr<VertexArray> vertexArray;
     std::shared_ptr<VertexBuffer> vertexBuffer;
@@ -91,13 +92,10 @@ void Renderer::Init() {
     data->singleTextureShader->setMat4("projection", data->m_camera.getProjectionMatrix());
 }
 
-void Renderer::setCamera(OrthographicCamera& camera) {
+void Renderer::setCamera(OrthographicCamera& camera, p2 zoom) {
 
     data->m_camera = camera;
-    data->shader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
-    data->lightShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
-    data->irregularQuadShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
-    data->singleTextureShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
+    data->zoom = zoom;
 }
 
 void Renderer::DrawQuad(const p2 pos1, const p2 pos2, const p2 pos3, const p2 pos4, const p4 color) {
@@ -172,6 +170,8 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
     data->lightShader->setFloat("linear", light.linear);
     data->lightShader->setFloat("quadratic", light.quadratic);
     data->lightShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
+    data->lightShader->setFloat("zoomx", data->zoom.x);
+    data->lightShader->setFloat("zoomy", data->zoom.y);
     data->lightVertexArray->bind();
     glDrawElements(GL_TRIANGLES, data->vertexArray->getIndexBuffer()->getCount(), GL_UNSIGNED_INT, nullptr);
     data->lightVertexArray->unbind();

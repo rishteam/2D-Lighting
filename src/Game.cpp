@@ -98,14 +98,14 @@ void Game::init() {
 
     Renderer::Init();
 
-    Renderer::setCamera(cameraController->getCamera());
+    Renderer::setCamera(cameraController->getCamera(), p2(cameraController->getZoom(), cameraController->getZoom()));
 
     srand(time(NULL));
 
     index = 0;
     int lightCount = 1;
 
-    p2 mousePos = {0, 0};
+    p2 mousePos = {-1, 0};
     p4 color    = {1, 1, 1, 1};
     lights.push_back(std::make_shared<Light>(mousePos, color, ri()));
 
@@ -207,7 +207,7 @@ void Game::processInput(float dt) {
 void Game::update(float dt) {
 
     cameraController->onUpdate(dt);
-    Renderer::setCamera(cameraController->getCamera());
+    Renderer::setCamera(cameraController->getCamera(), glm::vec2(cameraController->getZoom(), cameraController->getZoom()));
 //    Renderer::setCamera(cameraController->getCamera());
 //    std::cout << cameraController->getCamera().getPosition().x << std::endl;
 
@@ -315,7 +315,7 @@ void Game::render() {
 
     lightFBO->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Renderer::DrawQuad(p2(-1, -1), p2(-1, 1), p2(1, 1), p2(1, -1), ambientMask);
+    Renderer::DrawQuad(p2(-2, -2), p2(-2, 2), p2(2, 2), p2(2, -2), ambientMask);
 //    Renderer::DrawQuad(p2(0, 0), p2(0, 100), p2(100, 100), p2(Game::Get().GetWidth(), 0), ambientMask);
     for(auto light : lights) {
 
@@ -333,7 +333,7 @@ void Game::render() {
                 p2 normal         = p2(edge.y, -edge.x);
                 p2 lightToCurrent = currentVertex - light->pos;
 
-                if(glm::dot(normal, lightToCurrent) < 0)
+                if(glm::dot(normal, lightToCurrent) > 0)
                 {
                     p2 point1 = (currentVertex + lightToCurrent * 10.f) ;
                     p2 point2 = (nextVertex + (nextVertex - light->pos)* 10.f) ;
@@ -361,11 +361,11 @@ void Game::render() {
             }
         }
         glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         glStencilFunc(GL_EQUAL, 0, 1);
         glColorMask(true, true, true, true);
-        Renderer::DrawLight({-1, -1}, {-1, 1}, {1, 1}, {1, -1}, *light);
+        Renderer::DrawLight({light->pos.x-1, light->pos.y-1}, {light->pos.x-1, light->pos.y+1}, {light->pos.x+1, light->pos.y+1}, {light->pos.x+1, light->pos.y-1}, *light);
 //        Renderer::DrawLight(light->pos, point1, point1, point2, *light);
 //        Renderer::DrawLight(p2(0, 0), p2(0, Game::Get().GetHeight()), p2(Game::Get().GetWidth(), Game::Get().GetHeight()), p2(Game::Get().GetWidth(), 0), *light);
         glClear(GL_STENCIL_BUFFER_BIT);
@@ -375,7 +375,8 @@ void Game::render() {
 
     worldFBO->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, textureID); // bg
+    Renderer::DrawQuad({-10, 10}, {-10, -10}, {10, -10}, {10, 10}, p4(1, 1, 1, 1));
+//    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, textureID); // bg
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
         Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], block->color);
@@ -387,6 +388,6 @@ void Game::render() {
     bindFBO->unbind();
 
     glBlendFunc(GL_ONE, GL_ONE);
-//    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, bindFBO->getColorAttachmentRendererID());
+//    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, lightFBO->getColorAttachmentRendererID());
     Renderer::BindTexture(lightFBO->getColorAttachmentRendererID(), worldFBO->getColorAttachmentRendererID());
 }

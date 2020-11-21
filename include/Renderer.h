@@ -26,7 +26,7 @@ public:
 
     static void DrawSingleTexture(p2 pos1, p2 pos2, p2 pos3, p2 pos4, uint32_t id);
 
-    static void setCamera(OrthographicCamera &camera);
+    static void setCamera(OrthographicCamera &camera, p2 zoom);
 
 private:
 
