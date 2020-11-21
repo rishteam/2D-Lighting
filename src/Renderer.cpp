@@ -171,15 +171,37 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
     data->lightShader->setFloat("constant", light.constant);
     data->lightShader->setFloat("linear", light.linear);
     data->lightShader->setFloat("quadratic", light.quadratic);
+    data->lightShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
     data->lightVertexArray->bind();
     glDrawElements(GL_TRIANGLES, data->vertexArray->getIndexBuffer()->getCount(), GL_UNSIGNED_INT, nullptr);
     data->lightVertexArray->unbind();
 }
 
-void Renderer::DrawTexture(uint32_t id, uint32_t id2) {
+void Renderer::BindTexture(uint32_t id, uint32_t id2) {
+
+
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+        1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        1.0f, -1.0f,  1.0f, 0.0f,
+        1.0f,  1.0f,  1.0f, 1.0f
+    };
+
+
+    data->textureVBO->setData(quadVertices, sizeof(quadVertices));
+    BufferLayout layout2 = {
+            {ShaderDataType::Float2, "aPos"},
+            {ShaderDataType::Float2, "aTexCoord"}
+    };
+    data->textureVBO->setLayout(layout2);
+    data->textureVAO->addVertexBuffer(data->textureVBO);
 
     data->textureShader->bind();
-
+    data->textureShader->setMat4("projection", data->m_camera.getViewProjectionMatrix());
     // Bind Texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, id);

@@ -66,7 +66,7 @@ private:
     std::vector<std::shared_ptr<Block>> blocks;
     std::shared_ptr<Framebuffer> lightFBO;
     std::shared_ptr<Framebuffer> worldFBO;
-    std::shared_ptr<Framebuffer> fbo3;
+    std::shared_ptr<Framebuffer> bindFBO;
     int index;
     p4 ambientMask;
 };

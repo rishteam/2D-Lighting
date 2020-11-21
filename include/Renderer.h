@@ -22,7 +22,7 @@ public:
 
     static void DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light);
 
-    static void DrawTexture(uint32_t id, uint32_t id2);
+    static void BindTexture(uint32_t id, uint32_t id2);
 
     static void DrawSingleTexture(p2 pos1, p2 pos2, p2 pos3, p2 pos4, uint32_t id);
 

@@ -5,7 +5,7 @@
 
 OrthographicCameraController::OrthographicCameraController(float aspect, bool rotate, bool moveByKeyboard)
         : m_aspect(aspect),
-          m_zoom(1.f),
+          m_zoom(3.f),
           m_bounds(-m_zoom, m_zoom, -m_zoom, m_zoom),
           m_camera(m_bounds.left, m_bounds.right, m_bounds.bottom, m_bounds.top)
 {
@@ -81,7 +81,10 @@ void OrthographicCameraController::onImGuiRender()
     ImGui::Checkbox("Enable Camera", &m_enableState);
     ImGui::Checkbox("Enable Move by Keyboard", &m_enableKeyboardMove);
     //
-    ImGui::DragFloat("Zoom", &m_zoom);
+    if(ImGui::DragFloat("Zoom", &m_zoom, 0.1))
+    {
+        invalidate();
+    }
     //
     ImGui::DragFloat3("Position", glm::value_ptr(m_position));
     ImGui::DragFloat("Translate Speed", &m_translateSpeed);
@@ -108,7 +111,7 @@ void OrthographicCameraController::onImGuiRender()
 
 void OrthographicCameraController::invalidate()
 {
-    m_bounds = OrthographicCameraBounds{-m_aspect * m_zoom, m_aspect * m_zoom, -m_zoom, m_zoom};
+    m_bounds = OrthographicCameraBounds{-m_zoom, m_zoom, -m_zoom, m_zoom};
     m_camera.resizeCamera(m_bounds.left, m_bounds.right, m_bounds.bottom, m_bounds.top);
 }
 
