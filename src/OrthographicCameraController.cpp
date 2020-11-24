@@ -86,7 +86,7 @@ void OrthographicCameraController::onImGuiRender()
         invalidate();
     }
     //
-    ImGui::DragFloat3("Position", glm::value_ptr(m_position));
+    ImGui::DragFloat3("Position", glm::value_ptr(m_position), 0.1);
     ImGui::DragFloat("Translate Speed", &m_translateSpeed);
     //
     ImGui::Checkbox("Enable Rotate", &m_isAbleToRotate);

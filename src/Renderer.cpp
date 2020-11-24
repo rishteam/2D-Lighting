@@ -163,8 +163,6 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
 
     data->lightShader->bind();
     data->lightShader->setFloat4("lightColor", light.color);
-//    data->lightShader->setFloat2("lightPos", p2(light.pos.x, light.pos.y));
-    data->lightShader->setFloat("disMul", light.lightMul);
     data->lightShader->setFloat("lightRadius", light.radius);
     data->lightShader->setFloat("constant", light.constant);
     data->lightShader->setFloat("linear", light.linear);
@@ -177,18 +175,19 @@ void Renderer::DrawLight(p2 pos1, p2 pos2, p2 pos3, p2 pos4, Light light) {
     data->lightVertexArray->unbind();
 }
 
-void Renderer::BindTexture(uint32_t id, uint32_t id2) {
+void Renderer::BindTexture(p2 center, p2 size, uint32_t id, uint32_t id2) {
 
+    p2 si = size;
 
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    float quadVertices[] = {
         // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-        1.0f, -1.0f,  1.0f, 0.0f,
+        center.x - si.x, center.y + si.y,  0.0f, 1.0f,
+        center.x - si.x, center.y - si.y,  0.0f, 0.0f,
+        center.x + si.x, center.y - si.y,  1.0f, 0.0f,
 
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        1.0f, -1.0f,  1.0f, 0.0f,
-        1.0f,  1.0f,  1.0f, 1.0f
+        center.x - si.x, center.y + si.y,  0.0f, 1.0f,
+        center.x + si.x, center.y - si.y,  1.0f, 0.0f,
+        center.x + si.x, center.y + si.y,  1.0f, 1.0f
     };
 
 

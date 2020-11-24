@@ -69,6 +69,7 @@ private:
     std::shared_ptr<Framebuffer> bindFBO;
     int index;
     p4 ambientMask;
+    p2 bindTextureSize = {1, 1};
 };
 
 

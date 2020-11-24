@@ -105,7 +105,7 @@ void Game::init() {
     index = 0;
     int lightCount = 1;
 
-    p2 mousePos = {-1, 0};
+    p2 mousePos = {0, 0};
     p4 color    = {1, 1, 1, 1};
     lights.push_back(std::make_shared<Light>(mousePos, color, ri()));
 
@@ -117,9 +117,9 @@ void Game::init() {
 //    blocks.push_back(std::make_shared<Block>(p2{300, 300}, size));
 //    blocks.push_back(std::make_shared<Block>(p2{500, 300}, size));
     blocks.push_back(std::make_shared<Block>(p2{-1, 1}, size));
-    blocks.push_back(std::make_shared<Block>(p2{-1, -0.7}, size));
-    blocks.push_back(std::make_shared<Block>(p2{0.7, -0.7}, size));
-    blocks.push_back(std::make_shared<Block>(p2{0.7, 1}, size));
+    blocks.push_back(std::make_shared<Block>(p2{-1, -.7}, size));
+    blocks.push_back(std::make_shared<Block>(p2{.7, -.7}, size));
+    blocks.push_back(std::make_shared<Block>(p2{.7, 1}, size));
 //    blocks.push_back(std::make_shared<Block>(p2{-1 , 1}, size));
 
     lightFBO = Framebuffer::Create(FramebufferSpecification{(uint32_t)Game::Get().GetWidth(), (uint32_t)Game::Get().GetHeight()});
@@ -225,6 +225,12 @@ void Game::update(float dt) {
 void Game::onImGuiRender(float dt) {
 
     cameraController->onImGuiRender();
+
+    ImGui::Begin("Texture Attribute");
+    {
+        ImGui::DragFloat2("Texture Size", glm::value_ptr(bindTextureSize), 0.1);
+    }
+    ImGui::End();
 
     ImGui::Begin("Light Attribute");
     {
@@ -375,19 +381,19 @@ void Game::render() {
 
     worldFBO->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Renderer::DrawQuad({-10, 10}, {-10, -10}, {10, -10}, {10, 10}, p4(1, 1, 1, 1));
-//    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, textureID); // bg
+    Renderer::DrawQuad(p2(-1, -1), p2(-1, 1), p2(1, 1), p2(1, -1), p4(1, 1, 1, 1));
+    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, textureID); // bg
     for(auto block : blocks) {
         std::vector<p2> vertices = block->getVertices();
         Renderer::DrawQuad(vertices[0], vertices[1], vertices[2], vertices[3], block->color);
     }
     worldFBO->unbind();
 
-    bindFBO->bind();
-    Renderer::BindTexture(lightFBO->getColorAttachmentRendererID(), worldFBO->getColorAttachmentRendererID());
-    bindFBO->unbind();
+//    bindFBO->bind();
+//    Renderer::BindTexture(lightFBO->getColorAttachmentRendererID(), worldFBO->getColorAttachmentRendererID());
+//    bindFBO->unbind();
 
     glBlendFunc(GL_ONE, GL_ONE);
 //    Renderer::DrawSingleTexture({-1, 1}, {-1, -1}, {1, -1}, {1, 1}, lightFBO->getColorAttachmentRendererID());
-    Renderer::BindTexture(lightFBO->getColorAttachmentRendererID(), worldFBO->getColorAttachmentRendererID());
+    Renderer::BindTexture({0, 0}, bindTextureSize, lightFBO->getColorAttachmentRendererID(), worldFBO->getColorAttachmentRendererID());
 }
